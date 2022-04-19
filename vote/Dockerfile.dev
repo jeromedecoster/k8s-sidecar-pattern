@@ -1,0 +1,19 @@
+# FROM node:17.6-slim AS build
+# WORKDIR /app
+# ADD package.json .
+# RUN npm install
+# COPY --from=build /app .
+
+FROM node:17.6-slim
+# https://stackoverflow.com/a/52430444
+ARG NODE_ENV
+ENV NODE_ENV $NODE_ENV
+ARG WEBSITE_PORT
+ENV WEBSITE_PORT $WEBSITE_PORT
+ARG FRONT
+ENV FRONT $FRONT
+WORKDIR /app
+ADD . .
+RUN npm install
+# EXPOSE 3000 35729
+CMD npx livereload . --wait 200 --extraExts 'njk' & npx nodemon --no-update-notifier --ext js,json,njk index.js

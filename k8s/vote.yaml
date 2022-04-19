@@ -1,0 +1,66 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vote
+  namespace: k8s-sidecar
+  labels:
+    app: vote
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vote
+  template:
+    metadata:
+      labels:
+        app: vote
+    spec:
+      containers:
+      - name: vote
+        image: site:latest
+        volumeMounts:
+        - name: front
+          mountPath: /tmp
+        env:
+        - name: REDIS_HOST
+          value: "redis-svc"
+        - name: FRONT
+          value: "/tmp/git/repo"
+        ports:
+        - containerPort: 3000
+          name: vote 
+        imagePullPolicy: Never
+      - name: init-sync-ctr
+        image: k8s.gcr.io/git-sync/git-sync:v3.5.0
+        volumeMounts:
+          - name: front
+            mountPath: /tmp
+        resources: {}
+        env:
+        - name: GIT_SYNC_REPO
+          value: https://github.com/jeromedecoster/k8s-sidecar-pattern-frontend.git
+        - name: GIT_SYNC_BRANCH
+          value: master
+        - name: GIT_SYNC_DEPTH
+          value: "1"
+        - name: GIT_SYNC_DEST
+          value: "repo"
+      volumes:
+        - name: front
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vote-svc
+  namespace: k8s-sidecar
+spec:
+  selector:
+    app: vote
+  type: NodePort
+  ports:
+  - port: 9000
+    nodePort: 31000
+    protocol: TCP
+    targetPort: 3000

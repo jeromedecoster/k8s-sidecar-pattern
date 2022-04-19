@@ -1,0 +1,38 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-deploy
+  namespace: k8s-sidecar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+      role: mem-cache
+  template:
+    metadata:
+      labels:
+        app: redis
+        role: mem-cache
+    spec:
+      containers:
+      - name: redis
+        image: redis:alpine
+        ports:
+        - name: redis
+          containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-svc
+  namespace: k8s-sidecar
+spec:
+  selector:
+    app: redis
+    role: mem-cache
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379

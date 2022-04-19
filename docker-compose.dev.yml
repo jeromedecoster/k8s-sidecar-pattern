@@ -1,0 +1,46 @@
+version: "3"
+
+services:
+  vote:
+    build:
+      context: ./vote
+      dockerfile: Dockerfile.dev
+      # https://stackoverflow.com/a/52430444
+      args:
+        - NODE_ENV=development
+        - WEBSITE_PORT=4000
+        - FRONT=/sync/git/repo
+    volumes:
+      - front:/sync:ro
+      - "./vote:/app"
+    ports:
+      # must be same as WEBSITE_PORT= arg above
+      - "4000:4000"
+      - "35729:35729"
+    networks:
+      - backend
+    depends_on:
+      - redis
+    
+  git-sync:
+    image: k8s.gcr.io/git-sync/git-sync:v3.5.0
+    volumes:
+      - front:/tmp:rw
+    environment:
+      GIT_SYNC_REPO: https://github.com/jeromedecoster/k8s-sidecar-pattern-frontend.git
+      GIT_SYNC_BRANCH: master
+      GIT_SYNC_DEST: repo
+      GIT_SYNC_WAIT: 10
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - backend
+
+networks:
+  backend: {}
+
+volumes:
+  front:
